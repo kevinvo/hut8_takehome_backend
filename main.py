@@ -21,14 +21,16 @@ class CalculationInput(BaseModel):
 
 HASHPRICE_IN_USD_PER_TH_PER_DAY = 0.045  # Current Hashprice in USD/TH/s/Day
 BITCOIN_PRICE_IN_USD = 63_576  # Current cost per Bitcoin in USD
-DAYS_IN_MONTH = 30  # Approximate number of days in a month
-DAYS_IN_YEAR = 365  # Approximate number of days in a year
+DAYS_IN_MONTH = 30
+DAYS_IN_YEAR = 365
 
 @app.post("/calculate/")
 def calculate(input_data: CalculationInput):
     if any(value is None for value in input_data.__dict__.values()):
         raise HTTPException(status_code=400, detail="All parameters must be provided and cannot be null.")
     
+    error_messages = []
+
     # Access the input data
     electricity_cost = input_data.electricity_cost
     hash_rate = input_data.hash_rate
@@ -60,14 +62,19 @@ def calculate(input_data: CalculationInput):
         breakeven_timeline_days = initial_investment / daily_profit_usd
         breakeven_timeline = f"{breakeven_timeline_days:.2f} days"
     else:
-        breakeven_timeline_days = -1
         breakeven_timeline = -1
+        break_even_timeline_error = "Mining revenue is less than the daily cost. The break-even timeline is undefined."        
+        error_messages.append(break_even_timeline_error)
+
+    cost_to_mine_1_btc_error = "Cost to mine 1 BTC is undefined because no BTC is mined."
 
     # Cost to mine 1 BTC
     if daily_revenue_btc > 0:
         cost_to_mine_1_btc = daily_cost / daily_revenue_btc
     else:
-        cost_to_mine_1_btc = None  # Undefined if no BTC is mined
+        cost_to_mine_1_btc = -1
+        break_even_timeline_error = "Mining revenue is less than the daily cost. The break-even timeline is undefined."        
+        error_messages.append(break_even_timeline_error)
 
     return {
         "dailyCost": daily_cost,
@@ -83,6 +90,6 @@ def calculate(input_data: CalculationInput):
         "monthlyProfitUSD": monthly_profit_usd,
         "yearlyProfitUSD": yearly_profit_usd,
         "breakevenTimeline": breakeven_timeline,
-        "breakevenTimelineDays": breakeven_timeline_days,
-        "costToMine": cost_to_mine_1_btc
+        "costToMine": cost_to_mine_1_btc,
+        "error_messages": error_messages
     }
