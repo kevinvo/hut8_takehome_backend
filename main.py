@@ -32,6 +32,8 @@ HASHPRICE_IN_USD_PER_TH_PER_DAY = 0.045  # Current Hashprice in USD/TH/s/Day
 BITCOIN_PRICE_IN_USD = 63_576  # Current cost per Bitcoin in USD
 DAYS_IN_MONTH = 30
 DAYS_IN_YEAR = 365
+SECONDS_IN_A_HOUR = 3_600
+HOURS_IN_A_DAY = 24
 
 
 @app.post("/calculate/")
@@ -59,7 +61,9 @@ def calculate(input_data: CalculationInput):
         raise HTTPException(status_code=400, detail={"error": error_messages})
 
     # Cost calculations
-    daily_cost = power_consumption * 24 * electricity_cost
+    daily_cost = (
+        (power_consumption * SECONDS_IN_A_HOUR) * HOURS_IN_A_DAY * electricity_cost
+    )
     monthly_cost = daily_cost * DAYS_IN_MONTH  # Approximate 30 days in a month
     yearly_cost = daily_cost * DAYS_IN_YEAR
 
