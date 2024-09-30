@@ -7,6 +7,5 @@
 2. Daily Revenue = Hashprice * Hashrate. When Hashprice increases, more money is made.
 
 # How to run
-1. source venv/bin/activate
-2. pip install fastapi uvicorn
-3. uvicorn main:app --reload
+1. pip install -r requirements.txt
+2. uvicorn main:app --reload
