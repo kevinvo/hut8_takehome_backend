@@ -36,12 +36,6 @@ DAYS_IN_YEAR = 365
 
 @app.post("/calculate/")
 def calculate(input_data: CalculationInput):
-    if any(value is None for value in input_data.__dict__.values()):
-        raise HTTPException(
-            status_code=400,
-            detail="All parameters must be provided and cannot be null.",
-        )
-
     # Access the input data
     electricity_cost = input_data.electricity_cost
     hash_rate = input_data.hash_rate
