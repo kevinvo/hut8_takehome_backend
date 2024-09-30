@@ -87,10 +87,6 @@ def calculate(input_data: CalculationInput):
         break_even_timeline_error = "Mining revenue is less than the daily cost. The break-even timeline is undefined."
         error_messages.append(break_even_timeline_error)
 
-    cost_to_mine_1_btc_error = (
-        "Cost to mine 1 BTC is undefined because no BTC is mined."
-    )
-
     # Cost to mine 1 BTC
     if daily_revenue_btc > 0:
         cost_to_mine_1_btc = daily_cost / daily_revenue_btc
