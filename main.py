@@ -14,28 +14,55 @@ app.add_middleware(
 
 
 class CalculationInput(BaseModel):
-    electricity_cost: float = Field(..., description="Electricity cost must be a float and cannot be null")
-    hash_rate: float = Field(..., description="Hash rate must be a float and cannot be null (in TH/s)")
-    initial_investment: float = Field(..., description="Initial investment must be a float and cannot be null")
-    power_consumption: float = Field(..., description="Power consumption must be a float and cannot be null (in kW)")
+    electricity_cost: float = Field(
+        ..., description="Electricity cost must be a positive float"
+    )
+    hash_rate: float = Field(
+        ..., description="Hash rate must be a positive float (in TH/s)"
+    )
+    initial_investment: float = Field(
+        ..., description="Initial investment must be a non-negative float"
+    )
+    power_consumption: float = Field(
+        ..., description="Power consumption must be a positive float (in kW)"
+    )
+
 
 HASHPRICE_IN_USD_PER_TH_PER_DAY = 0.045  # Current Hashprice in USD/TH/s/Day
 BITCOIN_PRICE_IN_USD = 63_576  # Current cost per Bitcoin in USD
 DAYS_IN_MONTH = 30
 DAYS_IN_YEAR = 365
 
+
 @app.post("/calculate/")
 def calculate(input_data: CalculationInput):
     if any(value is None for value in input_data.__dict__.values()):
-        raise HTTPException(status_code=400, detail="All parameters must be provided and cannot be null.")
-    
-    error_messages = []
+        raise HTTPException(
+            status_code=400,
+            detail="All parameters must be provided and cannot be null.",
+        )
 
     # Access the input data
     electricity_cost = input_data.electricity_cost
     hash_rate = input_data.hash_rate
     initial_investment = input_data.initial_investment
     power_consumption = input_data.power_consumption
+
+    error_messages = []
+
+    # Validate inputs to be positive numbers
+    if electricity_cost <= 0:
+        error_messages.append("Electricity cost must be greater than 0.")
+    if hash_rate <= 0:
+        error_messages.append("Hash rate must be greater than 0.")
+    if initial_investment < 0:
+        error_messages.append("Initial investment cannot be negative.")
+    if power_consumption <= 0:
+        error_messages.append("Power consumption must be greater than 0.")
+
+    # If there are any validation errors, raise an HTTP exception
+    if error_messages:
+        raise HTTPException(status_code=400, detail={"error": error_messages})
 
     # Cost calculations
     daily_cost = power_consumption * 24 * electricity_cost
@@ -63,17 +90,19 @@ def calculate(input_data: CalculationInput):
         breakeven_timeline = f"{breakeven_timeline_days:.2f} days"
     else:
         breakeven_timeline = -1
-        break_even_timeline_error = "Mining revenue is less than the daily cost. The break-even timeline is undefined."        
+        break_even_timeline_error = "Mining revenue is less than the daily cost. The break-even timeline is undefined."
         error_messages.append(break_even_timeline_error)
 
-    cost_to_mine_1_btc_error = "Cost to mine 1 BTC is undefined because no BTC is mined."
+    cost_to_mine_1_btc_error = (
+        "Cost to mine 1 BTC is undefined because no BTC is mined."
+    )
 
     # Cost to mine 1 BTC
     if daily_revenue_btc > 0:
         cost_to_mine_1_btc = daily_cost / daily_revenue_btc
     else:
         cost_to_mine_1_btc = -1
-        break_even_timeline_error = "Mining revenue is less than the daily cost. The break-even timeline is undefined."        
+        break_even_timeline_error = "Mining revenue is less than the daily cost. The break-even timeline is undefined."
         error_messages.append(break_even_timeline_error)
 
     return {
@@ -91,5 +120,5 @@ def calculate(input_data: CalculationInput):
         "yearlyProfitUSD": yearly_profit_usd,
         "breakevenTimeline": breakeven_timeline,
         "costToMine": cost_to_mine_1_btc,
-        "error_messages": error_messages
+        "message": error_messages,
     }
