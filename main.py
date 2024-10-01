@@ -60,10 +60,11 @@ def calculate(input_data: CalculationInput):
     if error_messages:
         raise HTTPException(status_code=400, detail={"error": error_messages})
 
+    power_consumption_kw = power_consumption / 1000
+    energy_usage_per_day_kwh = power_consumption_kw * HOURS_IN_A_DAY
+
     # Cost calculations
-    daily_cost = (
-        (power_consumption * SECONDS_IN_A_HOUR) * HOURS_IN_A_DAY * electricity_cost
-    )
+    daily_cost = energy_usage_per_day_kwh * electricity_cost
     monthly_cost = daily_cost * DAYS_IN_MONTH  # Approximate 30 days in a month
     yearly_cost = daily_cost * DAYS_IN_YEAR
 
@@ -96,8 +97,10 @@ def calculate(input_data: CalculationInput):
         cost_to_mine_1_btc = daily_cost / daily_revenue_btc
     else:
         cost_to_mine_1_btc = -1
-        break_even_timeline_error = "Mining revenue is less than the daily cost. The break-even timeline is undefined."
-        error_messages.append(break_even_timeline_error)
+        cost_to_mine_1_btc_error = (
+            "Cost to mine 1 BTC is undefined because no BTC is mined."
+        )
+        error_messages.append(cost_to_mine_1_btc_error)
 
     return {
         "dailyCost": daily_cost,
